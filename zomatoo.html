@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ZOMATO</title>
+
+<!-- React -->
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+
+/* ================= GLOBAL ================= */
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  font-family:Arial, sans-serif;
+  background:#f5f5f5;
+}
+
+/* ================= HEADER ================= */
+
+header{
+  background:#e23744;
+  color:white;
+  padding:15px;
+  text-align:center;
+  position:sticky;
+  top:0;
+  z-index:1000;
+}
+
+header h1{
+  font-size:36px;
+  margin-bottom:10px;
+  letter-spacing:2px;
+}
+
+.nav{
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+
+.nav button{
+  margin:5px;
+}
+
+/* ================= HERO ================= */
+
+.hero{
+
+  height:60vh;
+  width:100%;
+
+  background-image:
+  linear-gradient(
+    rgba(0,0,0,0.50),
+    rgba(0,0,0,0.50)
+  ),
+  url("./image1.png");
+
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  text-align:center;
+  color:white;
+
+}
+
+/* ================= HERO CONTENT ================= */
+
+.hero-content{
+
+  background:rgba(226,55,68,0.85);
+
+  padding:40px;
+
+  border-radius:20px;
+
+  width:80%;
+  max-width:700px;
+
+  box-shadow:0 8px 25px rgba(0,0,0,0.4);
+
+}
+
+.hero-content h1{
+
+  font-size:75px;
+  font-weight:bold;
+  margin-bottom:15px;
+  text-transform:lowercase;
+
+}
+
+.hero-content h2{
+
+  font-size:55px;
+  margin-bottom:15px;
+  line-height:1.2;
+
+}
+
+.hero-content p{
+
+  font-size:24px;
+  line-height:1.5;
+
+}
+
+/* ================= BUTTON ================= */
+
+button{
+  background:#e23744;
+  color:white;
+  border:none;
+  padding:10px 16px;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:15px;
+}
+
+button:hover{
+  opacity:0.9;
+}
+
+.plus{
+  background:green;
+}
+
+/* ================= CONTAINER ================= */
+
+.container{
+  padding:20px;
+}
+
+/* ================= CATEGORY ================= */
+
+.category{
+  display:inline-block;
+  background:white;
+  padding:12px;
+  margin:6px;
+  border-radius:8px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* ================= CARD ================= */
+
+.card{
+  background:white;
+  border-radius:12px;
+  overflow:hidden;
+  margin:15px 0;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+.card img{
+  width:100%;
+  height:230px;
+  object-fit:cover;
+}
+
+.card-content{
+  padding:15px;
+}
+
+.card-content h2{
+  margin-bottom:10px;
+}
+
+.card-content h3{
+  margin-bottom:5px;
+}
+
+/* ================= INPUT ================= */
+
+input,select{
+  width:100%;
+  padding:10px;
+  margin-top:10px;
+  border-radius:5px;
+  border:1px solid #ccc;
+}
+
+/* ================= TOTAL ================= */
+
+.total{
+  font-size:26px;
+  margin-top:20px;
+  font-weight:bold;
+}
+
+/* ================= SUCCESS ================= */
+
+.celebrate{
+  text-align:center;
+  font-size:40px;
+  margin-top:100px;
+  animation:pop 1s infinite alternate;
+}
+
+@keyframes pop{
+
+  from{
+    transform:scale(1);
+  }
+
+  to{
+    transform:scale(1.2);
+  }
+
+}
+
+/* ================= MAP ================= */
+
+#map{
+  width:100%;
+  height:500px;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media(max-width:768px){
+
+  .hero-content h1{
+    font-size:45px;
+  }
+
+  .hero-content h2{
+    font-size:32px;
+  }
+
+  .hero-content p{
+    font-size:18px;
+  }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel">
+
+const {useState,useEffect,useRef}=React;
+
+/* ================= CATEGORIES ================= */
+
+const categories=[
+
+"Popular Items",
+"Chef Special",
+"Best Seller",
+"Combo Meals",
+"Family Packs",
+"Party Packs",
+"Buy 1 Get 1",
+"Happy Hours",
+"Weekend Combo",
+"Student Discount"
+
+];
+
+/* ================= RESTAURANTS ================= */
+
+const restaurants=[
+
+{
+name:"Linkbay Cafe ☕",
+image:"https://images.unsplash.com/photo-1509042239860-f550ce710b93",
+
+menu:[
+
+{name:"Espresso",price:120},
+{name:"Cold Coffee",price:180},
+{name:"Pancakes",price:220},
+{name:"French Fries",price:140},
+{name:"Brownie",price:160}
+
+]
+},
+
+{
+name:"Biryani House 🍗",
+image:"https://images.unsplash.com/photo-1633945274405-b6c8069047b0",
+
+menu:[
+
+{name:"Hyderabadi Chicken Biryani",price:320},
+{name:"Butter Chicken Biryani",price:390},
+{name:"Veg Dum Biryani",price:220},
+{name:"Chicken 65",price:220}
+
+]
+},
+
+{
+name:"Pizza World 🍕",
+image:"https://images.unsplash.com/photo-1513104890138-7c749659a591",
+
+menu:[
+
+{name:"Margherita Pizza",price:250},
+{name:"Farmhouse Pizza",price:350},
+{name:"Pepperoni Pizza",price:450},
+{name:"Garlic Bread",price:140}
+
+]
+},
+
+{
+name:"Burger Kingdom 🍔",
+image:"https://images.unsplash.com/photo-1550547660-d9450f859349",
+
+menu:[
+
+{name:"McChicken Burger",price:180},
+{name:"French Fries",price:120},
+{name:"Chicken Wrap",price:180},
+{name:"McFlurry",price:130}
+
+]
+},
+
+{
+name:"Tazza Tiffins 🍛",
+image:"https://images.unsplash.com/photo-1589301760014-d929f3979dbc",
+
+menu:[
+
+{name:"Idli",price:40},
+{name:"Dosa",price:70},
+{name:"Pongal",price:80},
+{name:"Filter Coffee",price:40}
+
+]
+}
+
+];
+
+/* ================= APP ================= */
+
+function App(){
+
+const [page,setPage]=useState("home");
+
+const [selectedRestaurant,setSelectedRestaurant]=useState(null);
+
+const [cart,setCart]=useState([]);
+
+const [orders,setOrders]=useState(
+JSON.parse(localStorage.getItem("orders")) || []
+);
+
+const [addresses,setAddresses]=useState(
+JSON.parse(localStorage.getItem("addresses")) || []
+);
+
+const [newAddress,setNewAddress]=useState("");
+
+const [selectedAddress,setSelectedAddress]=useState("");
+
+/* ================= ADD TO CART ================= */
+
+const addToCart=(restaurantName,item)=>{
+
+setCart(prev=>{
+
+const exists=prev.find(
+
+i=>
+i.name===item.name &&
+i.restaurant===restaurantName
+
+);
+
+if(exists){
+
+return prev.map(i=>
+
+i.name===item.name &&
+i.restaurant===restaurantName
+
+? {...i,qty:i.qty+1}
+
+: i
+
+);
+
+}
+
+return [
+
+...prev,
+
+{
+...item,
+qty:1,
+restaurant:restaurantName
+}
+
+];
+
+});
+
+alert(item.name + " added from " + restaurantName);
+
+};
+
+const total=cart.reduce(
+(sum,item)=>sum + item.price * item.qty,
+0
+);
+
+return(
+
+<div>
+
+<header>
+
+<h1>ZOMATO</h1>
+
+<div className="nav">
+
+<button onClick={()=>setPage("home")}>
+Home
+</button>
+
+<button onClick={()=>setPage("cart")}>
+Cart ({cart.length})
+</button>
+
+<button onClick={()=>setPage("history")}>
+Orders
+</button>
+
+<button onClick={()=>setPage("address")}>
+Addresses
+</button>
+
+</div>
+
+</header>
+
+{page==="home" && (
+
+<div>
+
+<div className="hero">
+
+<div className="hero-content">
+
+<h1>zomato</h1>
+
+<h2>
+India’s #1 <br/>
+food delivery app
+</h2>
+
+<p>
+Experience fast & easy online ordering
+<br/>
+on the Zomato app
+</p>
+
+</div>
+
+</div>
+
+<div className="container">
+
+<h2>🔥 Categories</h2>
+
+<div style={{margin:"15px 0"}}>
+
+{categories.map((c,index)=>(
+
+<div key={index} className="category">
+{c}
+</div>
+
+))}
+
+</div>
+
+<h2>🍽 Restaurants</h2>
+
+{restaurants.map((restaurant,index)=>(
+
+<div key={index} className="card">
+
+<img src={restaurant.image}/>
+
+<div className="card-content">
+
+<h2>{restaurant.name}</h2>
+
+<button onClick={()=>{
+setSelectedRestaurant(restaurant);
+setPage("menu");
+}}>
+View Menu
+</button>
+
+</div>
+
+</div>
+
+))}
+
+</div>
+
+</div>
+
+)}
+
+{page==="menu" && selectedRestaurant && (
+
+<div className="container">
+
+<h1>{selectedRestaurant.name}</h1>
+
+{selectedRestaurant.menu.map((item,index)=>(
+
+<div key={index} className="card">
+
+<div className="card-content">
+
+<h3>{item.name}</h3>
+
+<p>₹{item.price}</p>
+
+<button
+className="plus"
+onClick={()=>
+addToCart(
+selectedRestaurant.name,
+item
+)
+}
+>
++
+</button>
+
+</div>
+
+</div>
+
+))}
+
+</div>
+
+)}
+
+{page==="cart" && (
+
+<div className="container">
+
+<h1>🛒 Cart</h1>
+
+{cart.length===0 && (
+<p>Cart Empty</p>
+)}
+
+{cart.map((item,index)=>(
+
+<div key={index} className="card">
+
+<div className="card-content">
+
+<h3>{item.name}</h3>
+
+<p>🍽️ {item.restaurant}</p>
+
+<p>
+₹{item.price} x {item.qty}
+</p>
+
+</div>
+
+</div>
+
+))}
+
+<div className="total">
+💰 Total: ₹{total}
+</div>
+
+<h3 style={{marginTop:"15px"}}>
+📍 {selectedAddress || "No Address Selected"}
+</h3>
+
+<button
+style={{marginTop:"15px"}}
+onClick={()=>setPage("payment")}
+>
+Proceed To Payment
+</button>
+
+</div>
+
+)}
+
+{page==="payment" && (
+
+<div className="container">
+
+<h1>💳 Payment</h1>
+
+<select>
+<option>UPI</option>
+<option>Card</option>
+<option>Cash On Delivery</option>
+</select>
+
+<button
+style={{marginTop:"20px"}}
+onClick={()=>{
+
+const newOrder={
+
+items:cart,
+total:total,
+address:selectedAddress,
+status:"Preparing",
+time:new Date().toLocaleString()
+
+};
+
+const updatedOrders=[
+...orders,
+newOrder
+];
+
+setOrders(updatedOrders);
+
+localStorage.setItem(
+"orders",
+JSON.stringify(updatedOrders)
+);
+
+setCart([]);
+
+setPage("success");
+
+}}>
+Confirm Order
+</button>
+
+</div>
+
+)}
+
+{page==="success" && (
+
+<div className="container">
+
+<div className="celebrate">
+🎉 Order Confirmed 🎉
+</div>
+
+<div style={{textAlign:"center"}}>
+
+<button
+style={{marginTop:"40px"}}
+onClick={()=>setPage("map")}
+>
+Track Order
+</button>
+
+</div>
+
+</div>
+
+)}
+
+{page==="address" && (
+
+<div className="container">
+
+<h1>📍 Delivery Addresses</h1>
+
+<input
+placeholder="Enter Address"
+value={newAddress}
+onChange={(e)=>setNewAddress(e.target.value)}
+/>
+
+<button
+style={{marginTop:"10px"}}
+onClick={()=>{
+
+if(newAddress.trim()){
+
+const updated=[
+...addresses,
+newAddress
+];
+
+setAddresses(updated);
+
+localStorage.setItem(
+"addresses",
+JSON.stringify(updated)
+);
+
+setNewAddress("");
+
+}
+
+}}>
+Add Address
+</button>
+
+{addresses.map((address,index)=>(
+
+<div key={index} className="card">
+
+<div className="card-content">
+
+<p>{address}</p>
+
+<button onClick={()=>{
+setSelectedAddress(address);
+alert("✅ Address Selected");
+}}>
+Select
+</button>
+
+</div>
+
+</div>
+
+))}
+
+</div>
+
+)}
+
+{page==="history" && (
+
+<div className="container">
+
+<h1>📜 Order History</h1>
+
+{orders.length===0 && (
+<p>No Orders Yet</p>
+)}
+
+{orders.map((order,index)=>(
+
+<div key={index} className="card">
+
+<div className="card-content">
+
+<h2>Order #{index+1}</h2>
+
+<p>🕒 {order.time}</p>
+
+<p>📍 {order.address}</p>
+
+<p>📦 {order.status}</p>
+
+{order.items.map((item,i)=>(
+
+<div key={i}>
+{item.name} x {item.qty}
+</div>
+
+))}
+
+<h3 style={{marginTop:"10px"}}>
+💰 ₹{order.total}
+</h3>
+
+</div>
+
+</div>
+
+))}
+
+</div>
+
+)}
+
+{page==="map" && (
+<TrackingMap/>
+)}
+
+</div>
+
+);
+
+}
+
+/* ================= MAP ================= */
+
+function TrackingMap(){
+
+const mapRef=useRef(null);
+
+useEffect(()=>{
+
+const start=[17.7135,83.3020];
+const end=[17.7425,83.3380];
+
+const map=L.map(mapRef.current)
+.setView(end,13);
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+).addTo(map);
+
+const rider=L.marker(start)
+.addTo(map)
+.bindPopup("🛵 Rider");
+
+L.marker(end)
+.addTo(map)
+.bindPopup("🏠 Customer");
+
+L.polyline([start,end],{
+color:'red'
+}).addTo(map);
+
+let progress=0;
+
+let alerted=false;
+
+const interval=setInterval(()=>{
+
+progress += 0.01;
+
+const lat=
+start[0] + (end[0]-start[0]) * progress;
+
+const lng=
+start[1] + (end[1]-start[1]) * progress;
+
+rider.setLatLng([lat,lng]);
+
+if(progress >= 0.85 && !alerted){
+
+alerted=true;
+
+speechSynthesis.speak(
+new SpeechSynthesisUtterance(
+"Your order is arriving near your location"
+)
+);
+
+const audio=new Audio(
+"https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"
+);
+
+audio.play().catch(()=>{});
+
+if(navigator.vibrate){
+navigator.vibrate([300,200,300]);
+}
+
+alert("🚚 Order Arriving Near Your Location!");
+
+}
+
+if(progress>=1){
+
+clearInterval(interval);
+
+alert("🎉 Order Delivered Successfully!");
+
+}
+
+},500);
+
+},[]);
+
+return(
+<div id="map" ref={mapRef}></div>
+);
+
+}
+
+ReactDOM
+.createRoot(document.getElementById("root"))
+.render(<App/>);
+
+</script>
+
+</body>
+</html>
